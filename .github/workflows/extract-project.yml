@@ -1,0 +1,42 @@
+name: Extract Maddix Project
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "maddix-github-upload.zip"
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract project ZIP
+        run: |
+          unzip -o maddix-github-upload.zip -d extracted
+          
+          shopt -s dotglob
+          files=(extracted/*)
+          
+          if [ ${#files[@]} -eq 1 ] && [ -d "${files[0]}" ]; then
+            cp -a "${files[0]}"/. .
+          else
+            cp -a extracted/. .
+          fi
+          
+          rm -rf extracted
+          rm -f maddix-github-upload.zip
+
+      - name: Commit extracted project
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "Extract Maddix project [skip ci]"
+          git push
